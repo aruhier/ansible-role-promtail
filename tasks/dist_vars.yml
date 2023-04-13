@@ -1,0 +1,18 @@
+---
+
+- name: Include distribution specific variables
+  include_vars:
+    file: "{{ item }}"
+    name: _os_specific
+  with_first_found:
+    - "{{ ansible_distribution_release|lower }}.yml"
+    - "{{ ansible_distribution|lower }}.yml"
+    - "{{ ansible_os_family|lower }}.yml"
+    - "default.yml"
+
+- name: Set OS specific vars if undefined
+  set_fact: {
+    "{{ item.key }}":
+      "{{ hostvars[inventory_hostname][item.key] | default(item.value) }}"
+  }
+  with_dict: "{{ _os_specific }}"

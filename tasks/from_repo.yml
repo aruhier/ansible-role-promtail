@@ -1,0 +1,7 @@
+---
+
+- name: Install promtail from repository
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items: "{{ promtail_packages }}"

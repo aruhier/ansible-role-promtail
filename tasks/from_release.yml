@@ -1,10 +1,4 @@
 ---
-- name: Ensure unzip package is available
-  package:
-    name: unzip
-    state: present
-    update_cache: "{{ promtail_apt_update_cache }}"
-
 - name: Create promtail group
   group:
     name: "{{ promtail_system_group }}"
@@ -84,20 +78,11 @@
     dest: /usr/local/bin/promtail
     mode: 0755
 
-- name: Write config
-  notify:
-    - Restart promtail
-  template:
-    src: config.j2
-    dest: "{{ promtail_config_file }}"
-    owner: root
-    group: "{{ promtail_system_group }}"
-    mode: 0644
-
 - name: Create systemd service unit
   notify:
     - Restart promtail
   template:
-    src: "{{ promtail_systemd_service_template_file }}"
-    dest: "/etc/systemd/system/{{ promtail_systemd_service }}.service"
+    src: service.j2
+    dest: "/etc/systemd/system/{{ promtail_service }}.service"
     mode: 0644
+

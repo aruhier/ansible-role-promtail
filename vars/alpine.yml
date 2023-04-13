@@ -1,0 +1,16 @@
+---
+go_arch_map:
+  x86_64: 'amd64'
+  aarch64: 'arm64'
+  armv7l: 'arm'
+  armv6l: 'arm'
+
+go_arch: "{{ go_arch_map[ansible_architecture] | default(ansible_architecture) }}"
+
+promtail_install_from_repo: true
+promtail_system_user: root
+promtail_packages:
+  - loki-promtail@testing
+promtail_service: loki-promtail
+promtail_config_file: "/etc/loki/promtail-local-config.yaml"
+promtail_positions_directory: /tmp
