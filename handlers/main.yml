@@ -1,9 +1,6 @@
 ---
 - name: Restart promtail
-  become: True
-  service:
+  become: true
+  ansible.builtin.service:
     name: "{{ promtail_service }}"
     state: restarted
-  tags:
-    - promtail_run
-    - promtail

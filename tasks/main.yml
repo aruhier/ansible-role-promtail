@@ -1,49 +1,56 @@
 ---
-- import_tasks: dist_vars.yml
+- name: Load distribution specific variables
+  ansible.builtin.import_tasks: dist_vars.yml
 
-- import_tasks: preflight.yml
-  tags:
-    - promtail_install
-    - promtail
-  when:
-    - not promtail_install_from_repo
-
-- import_tasks: from_release.yml
-  tags:
-    - promtail_install
-    - promtail
+- name: Run preflight checks
+  ansible.builtin.import_tasks: preflight.yml
   when: not promtail_install_from_repo
-
-- import_tasks: from_repo.yml
   tags:
     - promtail_install
     - promtail
-  when: promtail_install_from_repo
 
-- import_tasks: config.yml
-  become: True
+- name: Install promtail from release
+  ansible.builtin.import_tasks: from_release.yml
+  when: not promtail_install_from_repo
+  become: true
+  tags:
+    - promtail_install
+    - promtail
+
+- name: Install promtail from repository
+  ansible.builtin.import_tasks: from_repo.yml
+  when: promtail_install_from_repo
+  become: true
+  tags:
+    - promtail_install
+    - promtail
+
+- name: Configure promtail
+  ansible.builtin.import_tasks: config.yml
+  become: true
   tags:
     - promtail_config
     - promtail
 
-- name: Ensure promtail service is started and enabled
-  become: True
-  service:
+- name: Ensure promtail service is started and enabled (systemd)
+  become: true
+  ansible.builtin.systemd_service:
     name: "{{ promtail_service }}"
     state: started
-    enabled: True
+    enabled: true
+    daemon_reload: true
+  when: ansible_service_mgr == "systemd"
   tags:
     - promtail_run
     - promtail
 
 - name: Ensure promtail service is started and enabled
-  become: True
-  service:
-    daemon_reload: True
+  become: true
+  ansible.builtin.service:
     name: "{{ promtail_service }}"
     state: started
-    enabled: True
-  when: ansible_service_mgr == "systemd"
+    enabled: true
+  when: ansible_service_mgr != "systemd"
   tags:
     - promtail_run
     - promtail

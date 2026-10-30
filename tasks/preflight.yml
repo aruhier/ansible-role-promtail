@@ -1,37 +1,23 @@
 ---
-
-- block:
-    - name: Get latest release
-      uri:
-        url: "https://api.github.com/repos/grafana/loki/releases/latest"
-        method: GET
-        return_content: True
-        status_code: 200
-        body_format: json
-        validate_certs: False
-        user: "{{ lookup('env', 'GH_USER') | default(omit) }}"
-        password: "{{ lookup('env', 'GH_TOKEN') | default(omit) }}"
-      no_log: "{{ not lookup('env', 'ANSIBLE_DEBUG') | bool }}"
-      register: _latest_release
-      until: _latest_release.status == 200
-      retries: 5
-    - name: "Set promtail version to {{ _latest_release.json.tag_name[1:] }}"
-      set_fact:
-        promtail_version: "{{ _latest_release.json.tag_name[1:] }}"
-  when:
-    - promtail_version == "latest"
+- name: Get checksum list
+  ansible.builtin.set_fact:
+    __promtail_checksums: "{{ lookup('ansible.builtin.url', 'https://github.com/grafana/loki/releases/download/v' + promtail_version + '/SHA256SUMS', wantlist=True) | list }}"
+  run_once: true
   delegate_to: localhost
-  run_once: True
+  when: not promtail_custom_checksum
 
-- name: "Get checksum list"
-  set_fact:
-    __promtail_checksums: "{{ lookup('url', 'https://github.com/grafana/loki/releases/download/v' + promtail_version + '/SHA256SUMS', wantlist=True) | list }}"
-  run_once: True
-  delegate_to: localhost
-
-- name: "Get checksum for {{ go_arch }} architecture"
-  set_fact:
+- name: Get checksum for architecture {{ go_arch }}
+  ansible.builtin.set_fact:
     __promtail_checksum: "{{ item.split(' ')[0] }}"
-  with_items: "{{ __promtail_checksums }}"
+  loop: "{{ __promtail_checksums }}"
   when:
-    - "('promtail-linux-' + go_arch + '.zip') in item"
+    - not promtail_custom_checksum
+    - ('promtail-linux-' + go_arch + '.zip') in item
+
+- name: Ensure a promtail binary is published for this version and architecture
+  ansible.builtin.assert:
+    that: promtail_custom_checksum or __promtail_checksum is defined
+    fail_msg: >-
+      No promtail-linux-{{ go_arch }}.zip found in Loki v{{ promtail_version }} release.
+      Promtail is EOL upstream and is not published after Loki 3.6.11.
+    quiet: true

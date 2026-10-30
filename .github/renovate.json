@@ -1,15 +1,24 @@
 {
-  "extends": ["config:base"],
-  "regexManagers": [
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "customManagers": [
     {
+      "customType": "regex",
       "depNameTemplate": "grafana/loki",
       "datasourceTemplate": "github-releases",
       "extractVersionTemplate": "^v(?<version>.*)$",
-      "fileMatch": ["^README\\.md$", "^defaults\\/main\\.yml$"],
+      "managerFilePatterns": ["/^README\\.md$/", "/^defaults/main\\.yml$/"],
       "matchStrings": [
         "promtail_version: \"(?<currentValue>.*)\"\\s+",
         "\\|\\s+`promtail_version`\\s+\\|\\s+\"(?<currentValue>.*)\"\\s+\\|\\s+.*\\s+\\|\\s+"
       ]
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Promtail is EOL: Loki releases after 3.6.11 no longer ship promtail binaries",
+      "matchDepNames": ["grafana/loki"],
+      "allowedVersions": "<=3.6.11"
     }
   ]
 }
